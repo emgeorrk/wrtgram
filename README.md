@@ -1,5 +1,10 @@
 # wrtgram
 
+[![CI](https://github.com/emgeorrk/wrtgram/actions/workflows/ci.yml/badge.svg)](https://github.com/emgeorrk/wrtgram/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/emgeorrk/wrtgram?display_name=tag&sort=semver)](https://github.com/emgeorrk/wrtgram/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/emgeorrk/wrtgram/total)](https://github.com/emgeorrk/wrtgram/releases)
+[![License: MIT](https://img.shields.io/github/license/emgeorrk/wrtgram)](LICENSE)
+
 Telegram bot for OpenWrt routers: status, connected devices, VPN tunnels with
 automatic failover, encrypted configuration backups and security
 notifications — one static binary, no dependencies, modules that enable
