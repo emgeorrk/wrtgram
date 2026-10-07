@@ -23,7 +23,7 @@ func Flash(path string) (total, avail uint64, err error) {
 		return 0, 0, fmt.Errorf("%w: %s: block size %d", errStatfs, path, st.Bsize)
 	}
 
-	bsize := uint64(st.Bsize) //nolint:gosec // checked non-negative above
+	bsize := uint64(st.Bsize)
 
 	return st.Blocks * bsize, st.Bavail * bsize, nil
 }
