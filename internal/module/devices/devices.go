@@ -96,14 +96,15 @@ func (s sink) Run(ctx context.Context, notify module.Notify) error {
 }
 
 // OnDHCP handles a hotplug lease event: an address never seen before is
-// announced with action buttons. The first event seeds the set from the
-// current leases so an install on a busy network stays quiet.
+// announced with action buttons. On a fresh install the first event seeds
+// the set from the current leases so a busy network stays quiet; an emptied
+// known_macs file instead yields a card for every device.
 func (m *Module) OnDHCP(ctx context.Context, ev entity.DHCPEvent) {
 	if m.known == nil || m.notify == nil || (ev.Action != "add" && ev.Action != "update") {
 		return
 	}
 
-	if m.known.Len() == 0 {
+	if m.known.Fresh() {
 		m.seed(ctx)
 	}
 

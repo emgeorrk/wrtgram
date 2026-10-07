@@ -121,7 +121,7 @@ Notification rules are `config notify '<name>'` sections:
 | Section | Options |
 |---|---|
 | `boot` | `enabled` |
-| `new_device` | `enabled`, `known_file` (`/etc/wrtgram/known_macs`) |
+| `new_device` | `enabled`, `known_file` (`/etc/wrtgram/known_macs`; empty the file and restart to get a card for every device again) |
 | `logins` | `enabled`, `success_window` (3600 s per IP), `failure_window` (600 s), `list trusted_ip` |
 | `thermal` | `enabled`, `high` (85), `normal` (75), `interval` (60 s), `remind` (3600 s) |
 | `backup` | `enabled`, `day` (`sun`), `time` (`03:30`) |
