@@ -82,8 +82,10 @@ func (m *Manager) Remember(ctx context.Context, mac, ip, name string) error {
 		return err
 	}
 
+	// A name in the host entry overrides whatever the client reports, so it
+	// is only written when the device announced one itself.
 	values := map[string]any{"mac": mac, "ip": ip}
-	if name = hostName(name, mac); name != "" {
+	if name = hostName(name); name != "" {
 		values["name"] = name
 	}
 
@@ -220,7 +222,7 @@ func normMAC(s string) (string, bool) {
 }
 
 // hostName makes a dnsmasq-safe host name: letters, digits and dashes.
-func hostName(name, mac string) string {
+func hostName(name string) string {
 	var b strings.Builder
 
 	for _, c := range strings.TrimSpace(name) {
@@ -232,10 +234,5 @@ func hostName(name, mac string) string {
 		}
 	}
 
-	out := strings.Trim(b.String(), "-")
-	if out == "" {
-		out = "device-" + strings.ReplaceAll(mac[len(mac)-5:], ":", "")
-	}
-
-	return out
+	return strings.Trim(b.String(), "-")
 }

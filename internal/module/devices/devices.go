@@ -4,6 +4,7 @@ package devices
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -18,6 +19,8 @@ import (
 
 // Name is the module and UCI section name.
 const Name = "devices"
+
+var errUnknownAction = errors.New("unknown device action")
 
 const (
 	// DefaultPageSize is the number of devices per message.
@@ -196,25 +199,7 @@ func (m *Module) action(ctx context.Context, req module.Request) (module.Reply, 
 	mac := strings.Join(parts[1:1+macParts], ":")
 	extra := strings.Join(parts[1+macParts:], ":")
 
-	var (
-		result string
-		err    error
-	)
-
-	switch act {
-	case actRemember:
-		err = m.manager.Remember(ctx, mac, extra, m.nameOf(ctx, mac))
-		result = "📌 Static lease " + tgtext.Code(extra) + " saved."
-	case actBlock:
-		err = m.manager.Block(ctx, mac)
-		result = "⛔ Blocked: all traffic from this device is rejected."
-	case actUnblock:
-		err = m.manager.Unblock(ctx, mac)
-		result = "✅ Unblocked."
-	default:
-		return module.Reply{Toast: "Unknown action"}, nil
-	}
-
+	result, err := m.perform(ctx, act, mac, extra)
 	if err != nil {
 		return module.Reply{}, err
 	}
@@ -236,6 +221,29 @@ func (m *Module) action(ctx context.Context, req module.Request) (module.Reply, 
 	}
 
 	return module.Reply{Text: card(mac, ip, name, result), Keyboard: m.cardKeyboard(ctx, mac, ip), Edit: true, Toast: result}, nil
+}
+
+// perform executes one card action and describes the outcome.
+func (m *Module) perform(ctx context.Context, act, mac, extra string) (string, error) {
+	switch act {
+	case actRemember:
+		if err := m.manager.Remember(ctx, mac, extra, m.nameOf(ctx, mac)); err != nil {
+			return "", err
+		}
+
+		result := "📌 Static lease " + tgtext.Code(extra) + " saved."
+		if m.nameOf(ctx, mac) == "" {
+			result += " The name will show up once the device reports one."
+		}
+
+		return result, nil
+	case actBlock:
+		return "⛔ Blocked: all traffic from this device is rejected.", m.manager.Block(ctx, mac)
+	case actUnblock:
+		return "✅ Unblocked.", m.manager.Unblock(ctx, mac)
+	}
+
+	return "", fmt.Errorf("%w: %q", errUnknownAction, act)
 }
 
 const macParts = 6

@@ -84,6 +84,10 @@ func TestRemember(t *testing.T) {
 			if tt.host != "" && !strings.Contains(calls, `"name":"My-iPhone"`) {
 				t.Errorf("host name not sanitised:\n%s", calls)
 			}
+
+			if tt.host == "" && strings.Contains(calls, `"name":`) {
+				t.Errorf("no name must be written for a nameless device:\n%s", calls)
+			}
 		})
 	}
 }
