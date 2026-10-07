@@ -23,6 +23,7 @@ const (
 	lanZone      = "lan"
 	targetReject = "REJECT"
 	protoAll     = "all"
+	optEnabled   = "enabled"
 )
 
 var (
@@ -55,7 +56,7 @@ func (m *Manager) Flags(ctx context.Context) (static, blocked map[string]bool) {
 
 	if pkg, err := m.uci.Get(ctx, pkgFirewall); err == nil {
 		for _, r := range pkg.OfType(typeRule) {
-			if strings.HasPrefix(r.Name, rulePrefix) && r.Bool("enabled", true) {
+			if strings.HasPrefix(r.Name, rulePrefix) && r.Bool(optEnabled, true) {
 				blocked[strings.ToLower(r.Opt("src_mac", ""))] = true
 			}
 		}
@@ -127,8 +128,8 @@ func (m *Manager) Block(ctx context.Context, mac string) error {
 		values  map[string]any
 		section string
 	}{
-		{section: name, values: map[string]any{"name": "wrtgram block " + mac, "src": zone, "dest": "*", "src_mac": mac, "proto": protoAll, "target": targetReject, "enabled": "1"}},
-		{section: name + "_in", values: map[string]any{"name": "wrtgram block " + mac + " (router)", "src": zone, "src_mac": mac, "proto": protoAll, "target": targetReject, "enabled": "1"}},
+		{section: name, values: map[string]any{"name": "wrtgram block " + mac, "src": zone, "dest": "*", "src_mac": mac, "proto": protoAll, "target": targetReject, optEnabled: "1"}},
+		{section: name + "_in", values: map[string]any{"name": "wrtgram block " + mac + " (router)", "src": zone, "src_mac": mac, "proto": protoAll, "target": targetReject, optEnabled: "1"}},
 	} {
 		if err := m.uci.AddSection(ctx, pkgFirewall, typeRule, r.section); err != nil {
 			continue // the rule exists already; Set below refreshes it
