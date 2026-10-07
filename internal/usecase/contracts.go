@@ -119,7 +119,13 @@ type StateStore interface {
 	Save(name string, v any) error
 }
 
-// Notifier delivers an out-of-band message to the configured chats.
+// LogSource streams the system log. The channel closes when ctx is done.
+type LogSource interface {
+	Tail(ctx context.Context) (<-chan entity.LogLine, error)
+}
+
+// Notifier delivers out-of-band messages and files to the configured chats.
 type Notifier interface {
 	Notify(ctx context.Context, msg entity.Message)
+	NotifyDocument(ctx context.Context, doc entity.Document)
 }

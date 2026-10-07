@@ -113,3 +113,7 @@ ping: sendto: Network unreachable
 >>> /etc/init.d/adblock restart
 >>> /bin/sh -c echo 'download 100 Mbit/s'
 download 100 Mbit/s
+>>>stream logread -f -l 1
+Wed Oct  7 14:03:14 2026 authpriv.notice dropbear[22151]: Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:x from 192.168.1.222:50670
+Wed Oct  7 14:03:20 2026 authpriv.notice dropbear[22200]: Bad password attempt for 'root' from 203.0.113.9:4444
+Wed Oct  7 14:03:25 2026 daemon.info rpcd[1234]: luci: accepted login on /admin for root from 192.168.1.213

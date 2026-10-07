@@ -12,6 +12,7 @@ import (
 	custommod "github.com/emgeorrk/wrtgram/internal/module/custom"
 	devicesmod "github.com/emgeorrk/wrtgram/internal/module/devices"
 	failovermod "github.com/emgeorrk/wrtgram/internal/module/failover"
+	loginsmod "github.com/emgeorrk/wrtgram/internal/module/logins"
 	networkmod "github.com/emgeorrk/wrtgram/internal/module/network"
 	servicesmod "github.com/emgeorrk/wrtgram/internal/module/services"
 	systemmod "github.com/emgeorrk/wrtgram/internal/module/system"
@@ -19,6 +20,7 @@ import (
 	vpnmod "github.com/emgeorrk/wrtgram/internal/module/vpn"
 	"github.com/emgeorrk/wrtgram/internal/repo/dhcp"
 	"github.com/emgeorrk/wrtgram/internal/repo/iproute"
+	"github.com/emgeorrk/wrtgram/internal/repo/logread"
 	"github.com/emgeorrk/wrtgram/internal/repo/netifd"
 	"github.com/emgeorrk/wrtgram/internal/repo/state"
 	"github.com/emgeorrk/wrtgram/internal/repo/sysfs"
@@ -30,8 +32,10 @@ import (
 	"github.com/emgeorrk/wrtgram/internal/usecase/custom"
 	"github.com/emgeorrk/wrtgram/internal/usecase/devices"
 	"github.com/emgeorrk/wrtgram/internal/usecase/failover"
+	"github.com/emgeorrk/wrtgram/internal/usecase/logwatch"
 	svcuc "github.com/emgeorrk/wrtgram/internal/usecase/services"
 	"github.com/emgeorrk/wrtgram/internal/usecase/system"
+	"github.com/emgeorrk/wrtgram/internal/usecase/thermal"
 	"github.com/emgeorrk/wrtgram/internal/usecase/vpn"
 )
 
@@ -42,10 +46,19 @@ const (
 	legacyGlob  = "etc/rc.d/S*vpn-failover"
 )
 
-// Failover defaults.
+// Defaults of the notification rules.
 const (
 	failoverGrace    = 300
 	failoverInterval = 30
+	loginsSuccessWin = 3600
+	loginsFailureWin = 600
+	thermalHigh      = 85
+	thermalNormal    = 75
+	thermalInterval  = 60
+	thermalRemind    = 3600
+	backupDay        = "sun"
+	backupTime       = "03:30"
+	knownMACsFile    = "known_macs"
 )
 
 // realClock implements usecase.Clock with the wall clock.
@@ -62,6 +75,7 @@ type services struct {
 	leases   *dhcp.Leases
 	wifi     *wifi.Hostapd
 	devices  *devices.Service
+	devmod   *devicesmod.Module // receives hotplug events through IPC
 	failover *failover.Loop
 	vpn      *vpn.Service
 	backup   *backup.Service
@@ -167,18 +181,23 @@ func (e *env) buildRegistry(ctx context.Context, svc *services) (*module.Registr
 		return "router"
 	}
 
+	svc.devmod = devicesmod.New(svc.devices, e.knownDevices(), func(ctx context.Context) bool {
+		ifaces, err := svc.wifi.Interfaces(ctx)
+
+		return svc.leases.Exists() || (err == nil && len(ifaces) > 0)
+	}, e.cfg.Module(devicesmod.Name).Int("page_size", devicesmod.DefaultPageSize), e.log)
+
+	tailer := logread.New(e.run, svc.clock, time.Local, e.log)
+
 	mods := []module.Module{
 		sys,
 		networkmod.New(svc.wan),
-		devicesmod.New(svc.devices, func(ctx context.Context) bool {
-			ifaces, err := svc.wifi.Interfaces(ctx)
-
-			return svc.leases.Exists() || (err == nil && len(ifaces) > 0)
-		}, e.cfg.Module(devicesmod.Name).Int("page_size", devicesmod.DefaultPageSize)),
+		svc.devmod,
 		vpnm,
 		failovermod.New(svc.failover, svc.clock, e.cfg.NotificationEnabled("failover")),
-		backupmod.New(svc.backup, hostname, func(context.Context) bool { return svc.backuper.Available() }),
-		thermalmod.New(svc.system),
+		backupmod.New(svc.backup, e.backupScheduler(svc, hostname), hostname, func(context.Context) bool { return svc.backuper.Available() }),
+		thermalmod.New(svc.system, e.thermalWatcher(svc)),
+		loginsmod.New(e.loginWatcher(tailer, svc.clock), func(context.Context) bool { return tailer.Available() }),
 		servicesmod.New(svc.services),
 		custommod.New(svc.custom, e.cfg.Commands),
 	}
@@ -190,6 +209,68 @@ func (e *env) buildRegistry(ctx context.Context, svc *services) (*module.Registr
 	}
 
 	return reg, nil
+}
+
+// knownDevices returns the known-MAC set, or nil when the rule is off.
+func (e *env) knownDevices() *devices.Known {
+	sec := e.cfg.Notification("new_device")
+	if !sec.Bool("enabled", true) {
+		return nil
+	}
+
+	path := sec.Opt("known_file", filepath.Join(e.persist(), knownMACsFile))
+
+	known, err := devices.NewKnown(path)
+	if err != nil {
+		e.log.Warn("new-device notifications disabled", "err", err)
+
+		return nil
+	}
+
+	return known
+}
+
+func (e *env) loginWatcher(tailer *logread.Tailer, clock usecase.Clock) *logwatch.Watcher {
+	sec := e.cfg.Notification("logins")
+	if !sec.Bool("enabled", true) {
+		return nil
+	}
+
+	return logwatch.New(tailer, clock, logwatch.Options{
+		TrustedIPs:    sec.List("trusted_ip"),
+		SuccessWindow: time.Duration(sec.Int("success_window", loginsSuccessWin)) * time.Second,
+		FailureWindow: time.Duration(sec.Int("failure_window", loginsFailureWin)) * time.Second,
+	})
+}
+
+func (e *env) thermalWatcher(svc *services) *thermal.Watcher {
+	sec := e.cfg.Notification("thermal")
+	if !sec.Bool("enabled", true) {
+		return nil
+	}
+
+	return thermal.New(svc.system.Temperatures, svc.clock, thermal.Options{
+		High:     float64(sec.Int("high", thermalHigh)),
+		Normal:   float64(sec.Int("normal", thermalNormal)),
+		Interval: time.Duration(sec.Int("interval", thermalInterval)) * time.Second,
+		Remind:   time.Duration(sec.Int("remind", thermalRemind)) * time.Second,
+	})
+}
+
+func (e *env) backupScheduler(svc *services, hostname func(context.Context) string) *backup.Scheduler {
+	sec := e.cfg.Notification("backup")
+	if !sec.Bool("enabled", true) || !svc.backuper.Available() {
+		return nil
+	}
+
+	sched, err := backup.ParseSchedule(sec.Opt("day", backupDay), sec.Opt("time", backupTime))
+	if err != nil {
+		e.log.Warn("weekly backup disabled", "err", err)
+
+		return nil
+	}
+
+	return backup.NewScheduler(svc.backup, state.New(e.persist()), svc.clock, sched, hostname)
 }
 
 // leaseFile reads dnsmasq's lease file path from UCI (default when unset).

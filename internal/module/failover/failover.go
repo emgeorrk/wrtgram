@@ -97,10 +97,10 @@ type notifier struct {
 
 func (notifier) Name() string { return "failover" }
 
-func (n notifier) Run(ctx context.Context, notify module.NotifyFunc) error {
+func (n notifier) Run(ctx context.Context, notify module.Notify) error {
 	return n.m.loop.Run(ctx, func(ev entity.FailoverEvent) {
 		if n.m.notify {
-			notify(ctx, entity.Message{Text: Render(ev)})
+			notify.Message(ctx, entity.Message{Text: Render(ev)})
 		}
 	})
 }

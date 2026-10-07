@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/emgeorrk/wrtgram/config"
+	"github.com/emgeorrk/wrtgram/internal/controller/ipc"
 	"github.com/emgeorrk/wrtgram/internal/repo/execx"
 	"github.com/emgeorrk/wrtgram/internal/repo/ubus"
 	"github.com/emgeorrk/wrtgram/internal/repo/uci"
@@ -126,6 +127,15 @@ func (e *env) setupFake() error {
 
 // tmpDir is where fake mode keeps volatile state (the host's temp dir).
 func (e *env) tmpDir() string { return os.TempDir() }
+
+// socket is the IPC socket path (a temp path in fake mode).
+func (e *env) socket() string {
+	if e.fake {
+		return filepath.Join(e.tmpDir(), "wrtgram.sock")
+	}
+
+	return ipc.DefaultSocket
+}
 
 func envOr(name, def string) string {
 	if v := os.Getenv(name); v != "" {

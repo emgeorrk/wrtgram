@@ -15,7 +15,10 @@ import (
 	"github.com/emgeorrk/wrtgram/pkg/osslenc"
 )
 
-var errNoBackuper = errors.New("sysupgrade not available")
+var (
+	errNoBackuper = errors.New("sysupgrade not available")
+	errSchedule   = errors.New("invalid backup schedule")
+)
 
 const (
 	dirMode  = 0o700

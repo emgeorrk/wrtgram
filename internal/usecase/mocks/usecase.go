@@ -899,6 +899,45 @@ func (mr *MockStateStoreMockRecorder) Save(name, v any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockStateStore)(nil).Save), name, v)
 }
 
+// MockLogSource is a mock of LogSource interface.
+type MockLogSource struct {
+	ctrl     *gomock.Controller
+	recorder *MockLogSourceMockRecorder
+	isgomock struct{}
+}
+
+// MockLogSourceMockRecorder is the mock recorder for MockLogSource.
+type MockLogSourceMockRecorder struct {
+	mock *MockLogSource
+}
+
+// NewMockLogSource creates a new mock instance.
+func NewMockLogSource(ctrl *gomock.Controller) *MockLogSource {
+	mock := &MockLogSource{ctrl: ctrl}
+	mock.recorder = &MockLogSourceMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLogSource) EXPECT() *MockLogSourceMockRecorder {
+	return m.recorder
+}
+
+// Tail mocks base method.
+func (m *MockLogSource) Tail(ctx context.Context) (<-chan entity.LogLine, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Tail", ctx)
+	ret0, _ := ret[0].(<-chan entity.LogLine)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Tail indicates an expected call of Tail.
+func (mr *MockLogSourceMockRecorder) Tail(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tail", reflect.TypeOf((*MockLogSource)(nil).Tail), ctx)
+}
+
 // MockNotifier is a mock of Notifier interface.
 type MockNotifier struct {
 	ctrl     *gomock.Controller
@@ -933,4 +972,16 @@ func (m *MockNotifier) Notify(ctx context.Context, msg entity.Message) {
 func (mr *MockNotifierMockRecorder) Notify(ctx, msg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockNotifier)(nil).Notify), ctx, msg)
+}
+
+// NotifyDocument mocks base method.
+func (m *MockNotifier) NotifyDocument(ctx context.Context, doc entity.Document) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "NotifyDocument", ctx, doc)
+}
+
+// NotifyDocument indicates an expected call of NotifyDocument.
+func (mr *MockNotifierMockRecorder) NotifyDocument(ctx, doc any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyDocument", reflect.TypeOf((*MockNotifier)(nil).NotifyDocument), ctx, doc)
 }

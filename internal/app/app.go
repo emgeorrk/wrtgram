@@ -25,10 +25,12 @@ func Main(cmd string, args []string, version string) error {
 		return probe(ctx)
 	case "check-config":
 		return checkConfig(ctx)
-	case "notify", "send-file", "event":
-		_ = args
-
-		return fmt.Errorf("%w: %s", errNotImplemented, cmd)
+	case "notify":
+		return notifyCmd(ctx, args)
+	case "send-file":
+		return sendFileCmd(ctx, args)
+	case "event":
+		return eventCmd(ctx, args)
 	case "version", "-v", "--version":
 		fmt.Fprintf(os.Stdout, "wrtgram %s (%s %s/%s)\n", version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 

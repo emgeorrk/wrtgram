@@ -28,3 +28,11 @@ type DHCPEvent struct {
 	IP       string
 	Hostname string
 }
+
+// LogLine is one syslog entry as printed by `logread`.
+type LogLine struct {
+	At       time.Time
+	Facility string // "authpriv.notice"
+	Tag      string // "dropbear", "luci", … (without the pid)
+	Message  string
+}

@@ -56,12 +56,15 @@ type Reply struct {
 	Edit     bool              // edit the originating message instead of sending a new one
 }
 
-// NotifyFunc delivers a notification to the configured chats.
-type NotifyFunc func(ctx context.Context, msg entity.Message)
+// Notify delivers notifications to the configured chats without blocking.
+type Notify interface {
+	Message(ctx context.Context, msg entity.Message)
+	Document(ctx context.Context, doc entity.Document)
+}
 
 // Notifier is a background producer of notifications. Run blocks until ctx is
 // done; the supervisor restarts it with backoff when it returns an error.
 type Notifier interface {
 	Name() string
-	Run(ctx context.Context, notify NotifyFunc) error
+	Run(ctx context.Context, notify Notify) error
 }

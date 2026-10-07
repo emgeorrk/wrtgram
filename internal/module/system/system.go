@@ -198,7 +198,7 @@ func (bootNotifier) Name() string { return "boot" }
 
 // Run sends one message when the daemon starts shortly after boot, then
 // idles. A procd respawn later in the uptime stays silent.
-func (n bootNotifier) Run(ctx context.Context, notify module.NotifyFunc) error {
+func (n bootNotifier) Run(ctx context.Context, notify module.Notify) error {
 	info, err := n.svc.Info(ctx)
 	if err != nil {
 		return err
@@ -210,7 +210,7 @@ func (n bootNotifier) Run(ctx context.Context, notify module.NotifyFunc) error {
 			host = board.Hostname
 		}
 
-		notify(ctx, entity.Message{Text: fmt.Sprintf("✅ Router %s started (uptime %s)",
+		notify.Message(ctx, entity.Message{Text: fmt.Sprintf("✅ Router %s started (uptime %s)",
 			tgtext.B(host), module.FormatDuration(info.Uptime))})
 	}
 

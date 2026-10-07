@@ -4,13 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/emgeorrk/wrtgram/internal/controller/ipc"
 	"github.com/emgeorrk/wrtgram/internal/controller/telegram"
+	"github.com/emgeorrk/wrtgram/internal/entity"
 	"github.com/emgeorrk/wrtgram/internal/module"
 	tgrepo "github.com/emgeorrk/wrtgram/internal/repo/telegram"
 	"github.com/emgeorrk/wrtgram/internal/usecase/notify"
+	"github.com/emgeorrk/wrtgram/pkg/tgtext"
 )
 
 const (
@@ -70,7 +75,7 @@ func runDaemon(ctx context.Context, version string) error {
 		e.log.Warn("command menu not set", "err", err)
 	}
 
-	wg := startBackground(ctx, e, reg, queue)
+	wg := startBackground(ctx, e, svc, reg, queue)
 
 	ctl.Run(ctx)
 	wg.Wait()
@@ -88,8 +93,8 @@ func (e *env) notifyChats() []int64 {
 	return e.cfg.Main.ChatIDs
 }
 
-// startBackground runs the notification queue and every notifier.
-func startBackground(ctx context.Context, e *env, reg *module.Registry, queue *notify.Queue) *sync.WaitGroup {
+// startBackground runs the notification queue, the IPC socket and every notifier.
+func startBackground(ctx context.Context, e *env, svc *services, reg *module.Registry, queue *notify.Queue) *sync.WaitGroup {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -98,6 +103,17 @@ func startBackground(ctx context.Context, e *env, reg *module.Registry, queue *n
 		defer wg.Done()
 
 		queue.Run(ctx, drainGrace)
+	}()
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		srv := ipc.NewServer(e.socket(), &ipcHandler{queue: queue, svc: svc}, e.log)
+		if err := srv.Run(ctx); err != nil {
+			e.log.Error("ipc server stopped", "err", err)
+		}
 	}()
 
 	for _, n := range reg.Notifiers() {
@@ -111,6 +127,32 @@ func startBackground(ctx context.Context, e *env, reg *module.Registry, queue *n
 	}
 
 	return &wg
+}
+
+// ipcHandler serves the CLI: plain-text notifications, files and hotplug events.
+type ipcHandler struct {
+	queue *notify.Queue
+	svc   *services
+}
+
+func (h *ipcHandler) Notify(ctx context.Context, text string) {
+	h.queue.Notify(ctx, entity.Message{Text: tgtext.Esc(text)})
+}
+
+func (h *ipcHandler) SendFile(ctx context.Context, path, caption string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("send-file: %w", err)
+	}
+	defer f.Close()
+
+	h.queue.NotifyDocument(ctx, entity.Document{Data: f, Name: filepath.Base(path), Caption: caption})
+
+	return nil
+}
+
+func (h *ipcHandler) DHCPEvent(ctx context.Context, ev entity.DHCPEvent) {
+	h.svc.devmod.OnDHCP(ctx, ev)
 }
 
 // waitForTelegram retries getMe until it succeeds: right after boot the
@@ -149,7 +191,7 @@ func superviseNotifier(ctx context.Context, n module.Notifier, queue *notify.Que
 	for {
 		start := time.Now()
 
-		err := n.Run(ctx, queue.Notify)
+		err := n.Run(ctx, queue)
 		if ctx.Err() != nil {
 			return
 		}
