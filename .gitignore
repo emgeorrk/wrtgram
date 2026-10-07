@@ -1,0 +1,14 @@
+# build artifacts
+bin/
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# local dev config (contains the bot token)
+*.local.json
+.env

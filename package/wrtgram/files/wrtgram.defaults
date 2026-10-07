@@ -1,0 +1,11 @@
+#!/bin/sh
+# uci-defaults: runs once after install/upgrade.
+[ -f /etc/config/wrtgram ] || touch /etc/config/wrtgram
+chmod 600 /etc/config/wrtgram
+mkdir -p /etc/wrtgram
+uci -q get wrtgram.main >/dev/null || {
+	uci set wrtgram.main=main
+	uci set wrtgram.main.enabled='1'
+	uci commit wrtgram
+}
+exit 0

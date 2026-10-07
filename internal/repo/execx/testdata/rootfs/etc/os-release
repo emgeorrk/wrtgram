@@ -1,0 +1,6 @@
+NAME="OpenWrt"
+VERSION="25.12.5"
+ID="openwrt"
+VERSION_ID="25.12.5"
+OPENWRT_BOARD="mediatek/filogic"
+OPENWRT_ARCH="aarch64_cortex-a53"

@@ -1,0 +1,78 @@
+>>> ubus call system board
+{
+	"kernel": "6.12.94",
+	"hostname": "OpenWrt",
+	"system": "ARMv8 Processor rev 4",
+	"model": "Cudy WR3000S v1",
+	"board_name": "cudy,wr3000s-v1",
+	"rootfs_type": "squashfs",
+	"release": {
+		"distribution": "OpenWrt",
+		"version": "25.12.5",
+		"revision": "r33051-f5dae5ece4",
+		"target": "mediatek/filogic",
+		"description": "OpenWrt 25.12.5 r33051-f5dae5ece4"
+	}
+}
+>>> ubus call system info
+{
+	"localtime": 1791377407,
+	"uptime": 57660,
+	"load": [5243, 3277, 655],
+	"memory": {
+		"total": 245317632,
+		"free": 55640064,
+		"shared": 12132352,
+		"buffered": 0,
+		"available": 50102272,
+		"cached": 43077632
+	},
+	"root": {"total": 45300, "free": 38444, "used": 6856, "avail": 36088},
+	"tmp": {"total": 119784, "free": 107936, "used": 11848, "avail": 107936},
+	"swap": {"total": 0, "free": 0}
+}
+>>> ubus call system reboot
+>>> ubus call network.interface dump
+{
+	"interface": [
+		{"interface": "awg0", "up": true, "l3_device": "awg0", "proto": "amneziawg", "device": "awg0", "uptime": 57600, "ipv4-address": [{"address": "10.8.1.2", "mask": 24}], "route": [], "dns-server": []},
+		{"interface": "awg1", "up": true, "l3_device": "awg1", "proto": "amneziawg", "device": "awg1", "uptime": 57600, "ipv4-address": [{"address": "10.8.2.2", "mask": 24}], "route": [], "dns-server": []},
+		{"interface": "lan", "up": true, "l3_device": "br-lan", "proto": "static", "device": "br-lan", "uptime": 57650, "ipv4-address": [{"address": "192.168.1.1", "mask": 24}], "route": [], "dns-server": []},
+		{"interface": "loopback", "up": true, "l3_device": "lo", "proto": "static", "device": "lo", "uptime": 57660, "ipv4-address": [{"address": "127.0.0.1", "mask": 8}], "route": [], "dns-server": []},
+		{"interface": "wan", "up": true, "l3_device": "wan", "proto": "static", "device": "wan", "uptime": 57660, "ipv4-address": [{"address": "10.0.0.2", "mask": 24}], "route": [{"target": "0.0.0.0", "mask": 0, "nexthop": "10.0.0.1", "source": "0.0.0.0/0"}], "dns-server": ["85.114.0.81", "85.114.2.81"]},
+		{"interface": "wan6", "up": false, "proto": "dhcpv6", "device": "wan", "ipv4-address": [], "route": [], "dns-server": []}
+	]
+}
+>>> ubus call network.interface.wan status
+{
+	"up": true,
+	"pending": false,
+	"available": true,
+	"autostart": true,
+	"dynamic": false,
+	"uptime": 57660,
+	"l3_device": "wan",
+	"proto": "static",
+	"device": "wan",
+	"metric": 0,
+	"ipv4-address": [{"address": "10.0.0.2", "mask": 24}],
+	"ipv6-address": [],
+	"route": [{"target": "0.0.0.0", "mask": 0, "nexthop": "10.0.0.1", "source": "0.0.0.0/0"}],
+	"dns-server": ["85.114.0.81", "85.114.2.81"]
+}
+>>> ubus call uci get {"config":"wrtgram"}
+{
+	"values": {
+		"main": {".anonymous": false, ".type": "main", ".name": "main", ".index": 0, "token": "", "chat_id": [], "log_level": "debug", "workers": "2"},
+		"failover": {".anonymous": false, ".type": "module", ".name": "failover", ".index": 1, "enabled": "1", "tunnel": ["awg0", "awg1"], "grace": "60"},
+		"speed": {".anonymous": false, ".type": "command", ".name": "speed", ".index": 2, "command": "echo 'download 100 Mbit/s'", "description": "Fake speed test"}
+	}
+}
+>>> ubus list hostapd.*
+hostapd.phy0-ap0
+hostapd.phy1-ap0
+>>>path awg 1
+>>>path wg 1
+>>>path sysupgrade 1
+>>>path logread 1
+>>>path ip 1

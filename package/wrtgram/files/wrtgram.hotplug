@@ -1,0 +1,8 @@
+#!/bin/sh
+# /etc/hotplug.d/dhcp/90-wrtgram: forward dnsmasq lease events to the bot.
+case "$ACTION" in
+	add|update) ;;
+	*) exit 0 ;;
+esac
+[ -S /var/run/wrtgram.sock ] || exit 0
+exec /usr/bin/wrtgram event dhcp
