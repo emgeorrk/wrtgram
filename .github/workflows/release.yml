@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   release:
@@ -76,3 +77,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "$GITHUB_REF_NAME" out/* --title "$GITHUB_REF_NAME" --notes-file notes.md
+
+      # Events raised with GITHUB_TOKEN do not start other workflows, so the
+      # OpenWrt SDK package build is dispatched explicitly (best effort).
+      - name: Build OpenWrt packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run package.yml -f tag="$GITHUB_REF_NAME" || true

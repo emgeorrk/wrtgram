@@ -50,8 +50,9 @@ fi
 
 # --- architecture ----------------------------------------------------------
 [ -r /etc/os-release ] || die "not an OpenWrt system (/etc/os-release missing)"
-. /etc/os-release
-ARCH="${OPENWRT_ARCH:-}"
+# Sourced in a subshell: os-release defines VERSION and would clobber ours.
+ARCH=$(. /etc/os-release; echo "${OPENWRT_ARCH:-}")
+OPENWRT=$(. /etc/os-release; echo "${VERSION_ID:-?}")
 [ -n "$ARCH" ] || die "OPENWRT_ARCH not set in /etc/os-release"
 
 case "$ARCH" in
@@ -83,7 +84,7 @@ else
 	SUMS=""
 fi
 
-echo "wrtgram: arch $ARCH -> $ARTIFACT, ${VERSION:-custom build}"
+echo "wrtgram: OpenWrt $OPENWRT, arch $ARCH -> $ARTIFACT, ${VERSION:-custom build}"
 
 # --- download and verify ---------------------------------------------------
 rm -rf "$TMP"; mkdir -p "$TMP"
