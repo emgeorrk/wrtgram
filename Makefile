@@ -42,7 +42,7 @@ dist: ### cross-compile every target into $(DIST_DIR)/
 	@ls -l $(DIST_DIR)
 
 size: build-router ### print the router binary size and check it against the budget
-	@sz=$$(stat -f %z $(BINARY)-linux-$(ROUTER_GOARCH) 2>/dev/null || stat -c %s $(BINARY)-linux-$(ROUTER_GOARCH)); \
+	@sz=$$(wc -c < $(BINARY)-linux-$(ROUTER_GOARCH) | tr -d ' '); \
 	echo "$(BINARY)-linux-$(ROUTER_GOARCH): $$sz bytes ($$((sz / 1024 / 1024)) MiB)"; \
 	[ "$$sz" -le $(SIZE_MAX) ] || { echo "binary exceeds the size budget ($(SIZE_MAX))"; exit 1; }
 

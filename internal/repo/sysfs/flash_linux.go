@@ -1,4 +1,4 @@
-//go:build unix
+//go:build linux
 
 package sysfs
 
@@ -19,7 +19,11 @@ func Flash(path string) (total, avail uint64, err error) {
 		return 0, 0, fmt.Errorf("%w: %s: %w", errStatfs, path, err)
 	}
 
-	bsize := uint64(st.Bsize)
+	if st.Bsize <= 0 {
+		return 0, 0, fmt.Errorf("%w: %s: block size %d", errStatfs, path, st.Bsize)
+	}
+
+	bsize := uint64(st.Bsize) //nolint:gosec // checked non-negative above
 
 	return st.Blocks * bsize, st.Bavail * bsize, nil
 }
