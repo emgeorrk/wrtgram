@@ -76,3 +76,40 @@ hostapd.phy1-ap0
 >>>path sysupgrade 1
 >>>path logread 1
 >>>path ip 1
+>>> ubus call network.interface.awg0 status
+{"up": true, "uptime": 57600, "l3_device": "awg0", "proto": "amneziawg", "device": "awg0", "ipv4-address": [{"address": "10.8.1.2", "mask": 24}], "route": [], "dns-server": []}
+>>> ubus call network.interface.awg1 status
+{"up": true, "uptime": 57600, "l3_device": "awg1", "proto": "amneziawg", "device": "awg1", "ipv4-address": [{"address": "10.8.2.2", "mask": 24}], "route": [], "dns-server": []}
+>>> awg show awg0 dump
+(hidden)	PUBKEYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=	51820	off	4	40	70	0	0	1	2	3	4
+PEER0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=	(none)	203.0.113.10:8443	0.0.0.0/1,128.0.0.0/1	1791377300	123456789	98765432	25
+>>> awg show awg1 dump
+(hidden)	PUBKEYBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=	51821	off	4	40	70	0	0	1	2	3	4
+PEER1BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=	(none)	203.0.113.20:8443	0.0.0.0/1,128.0.0.0/1	1791376000	2222	3333	25
+>>> ip route show 0.0.0.0/1
+0.0.0.0/1 dev awg0 scope link
+>>> ip route replace
+>>> ip route del
+>>> ip rule show pref 29990
+29990:	from all iif lo ipproto udp dport 123 lookup 123
+>>> /etc/init.d/sysntpd restart
+>>> ping -q -c 2 -W 2 -I awg0
+PING 1.1.1.1 (1.1.1.1): 56 data bytes
+2 packets transmitted, 2 packets received, 0% packet loss
+>>>error ping -q -c 2 -W 2 -I awg1
+ping: sendto: Network unreachable
+>>> ubus call hostapd.phy0-ap0 get_clients
+{"freq": 2437, "clients": {"aa:bb:cc:dd:ee:01": {"auth": true, "assoc": true, "authorized": true, "signal": -55}}}
+>>> ubus call hostapd.phy1-ap0 get_clients
+{"freq": 5200, "clients": {"aa:bb:cc:dd:ee:04": {"auth": true, "assoc": true, "authorized": true, "signal": -62}, "aa:bb:cc:dd:ee:09": {"auth": true, "assoc": true, "authorized": true, "signal": -70}}}
+>>> ubus call luci-rpc getHostHints
+{"aa:bb:cc:dd:ee:02": {"ipaddrs": ["192.168.1.236"], "ip6addrs": [], "name": "printer.lan"}, "aa:bb:cc:dd:ee:09": {"ipaddrs": [], "ip6addrs": [], "name": "tv"}}
+>>> ubus call uci get {"config":"dhcp"}
+{"values": {"cfg01411c": {".anonymous": true, ".type": "dnsmasq", ".name": "cfg01411c", ".index": 0, "leasefile": "/tmp/dhcp.leases"}}}
+>>> ubus call uci set
+>>> ubus call uci commit
+>>> ubus call service list
+{"dnsmasq": {"instances": {"cfg01411c": {"running": true, "pid": 1234}}}, "dropbear": {"instances": {"instance1": {"running": true, "pid": 1300}}}, "wrtgram": {"instances": {"instance1": {"running": true, "pid": 4242}}}, "adblock": {}, "cron": {"instances": {"instance1": {"running": false}}}}
+>>> /etc/init.d/adblock restart
+>>> /bin/sh -c echo 'download 100 Mbit/s'
+download 100 Mbit/s

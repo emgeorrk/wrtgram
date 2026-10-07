@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/emgeorrk/wrtgram/internal/entity"
 	"github.com/emgeorrk/wrtgram/internal/module"
 	systemmod "github.com/emgeorrk/wrtgram/internal/module/system"
 )
+
+const handshakeFresh = 3 * time.Minute
 
 // probe prints what the bot would see on this router: modules, board, link,
 // sensors. It needs no token.
@@ -19,7 +22,10 @@ func probe(ctx context.Context) error {
 		return err
 	}
 
-	svc := e.buildServices()
+	svc, err := e.buildServices(ctx)
+	if err != nil {
+		return err
+	}
 
 	reg, err := e.buildRegistry(ctx, svc)
 	if err != nil {
@@ -58,7 +64,22 @@ func probe(ctx context.Context) error {
 		fmt.Fprintf(w, "WAN:     %s via %s up=%v addr=%v gw=%s\n", snap.WAN.Interface, snap.WAN.Device, snap.WAN.Up, snap.WAN.IPv4, snap.WAN.Gateway)
 	}
 
+	printExtras(ctx, w, svc)
+
 	return nil
+}
+
+func printExtras(ctx context.Context, w io.Writer, svc *services) {
+	if tunnels, err := svc.vpn.List(ctx); err == nil {
+		for _, t := range tunnels {
+			fmt.Fprintf(w, "Tunnel:  %s (%s) up=%v peers=%d handshake=%v\n", t.Ref.Name, t.Ref.Proto, t.Up, len(t.Peers),
+				t.Handshaked(svc.clock.Now(), handshakeFresh))
+		}
+	}
+
+	if devs, err := svc.devices.List(ctx); err == nil {
+		fmt.Fprintf(w, "Devices: %d\n", len(devs))
+	}
 }
 
 func printTemps(w io.Writer, temps []entity.Temperature, err error) {
@@ -84,7 +105,10 @@ func checkConfig(ctx context.Context) error {
 		return err
 	}
 
-	svc := e.buildServices()
+	svc, err := e.buildServices(ctx)
+	if err != nil {
+		return err
+	}
 
 	reg, err := e.buildRegistry(ctx, svc)
 	if err != nil {

@@ -18,6 +18,7 @@ const (
 type pending struct {
 	expires time.Time
 	command string
+	args    []string
 	chatID  int64
 }
 
@@ -29,7 +30,7 @@ type confirmStore struct {
 
 func newConfirmStore() *confirmStore { return &confirmStore{items: make(map[string]pending)} }
 
-func (s *confirmStore) add(command string, chatID int64, now time.Time) string {
+func (s *confirmStore) add(command string, chatID int64, args []string, now time.Time) string {
 	buf := make([]byte, nonceBytes)
 	_, _ = rand.Read(buf)
 	nonce := hex.EncodeToString(buf)
@@ -43,22 +44,26 @@ func (s *confirmStore) add(command string, chatID int64, now time.Time) string {
 		}
 	}
 
-	s.items[nonce] = pending{expires: now.Add(confirmTTL), command: command, chatID: chatID}
+	s.items[nonce] = pending{expires: now.Add(confirmTTL), command: command, args: args, chatID: chatID}
 
 	return nonce
 }
 
-// take validates and consumes a nonce.
-func (s *confirmStore) take(nonce, command string, chatID int64, now time.Time) bool {
+// take validates and consumes a nonce, returning the original arguments.
+func (s *confirmStore) take(nonce, command string, chatID int64, now time.Time) ([]string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	p, ok := s.items[nonce]
 	if !ok {
-		return false
+		return nil, false
 	}
 
 	delete(s.items, nonce)
 
-	return p.command == command && p.chatID == chatID && now.Before(p.expires)
+	if p.command != command || p.chatID != chatID || !now.Before(p.expires) {
+		return nil, false
+	}
+
+	return p.args, true
 }

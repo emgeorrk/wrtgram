@@ -13,8 +13,9 @@ const (
 
 // TunnelRef identifies a configured tunnel interface.
 type TunnelRef struct {
-	Name  string // interface and device name, e.g. "awg0"
-	Proto TunnelProto
+	Name   string // netifd logical interface, e.g. "awg0"
+	Device string // kernel device, usually the same name
+	Proto  TunnelProto
 }
 
 // Peer is one WireGuard-style peer of a tunnel.

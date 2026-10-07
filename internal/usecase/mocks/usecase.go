@@ -692,6 +692,161 @@ func (mr *MockTunnelsMockRecorder) Status(ctx, ref any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockTunnels)(nil).Status), ctx, ref)
 }
 
+// MockLeases is a mock of Leases interface.
+type MockLeases struct {
+	ctrl     *gomock.Controller
+	recorder *MockLeasesMockRecorder
+	isgomock struct{}
+}
+
+// MockLeasesMockRecorder is the mock recorder for MockLeases.
+type MockLeasesMockRecorder struct {
+	mock *MockLeases
+}
+
+// NewMockLeases creates a new mock instance.
+func NewMockLeases(ctrl *gomock.Controller) *MockLeases {
+	mock := &MockLeases{ctrl: ctrl}
+	mock.recorder = &MockLeasesMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLeases) EXPECT() *MockLeasesMockRecorder {
+	return m.recorder
+}
+
+// Leases mocks base method.
+func (m *MockLeases) Leases(ctx context.Context) ([]entity.Lease, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Leases", ctx)
+	ret0, _ := ret[0].([]entity.Lease)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Leases indicates an expected call of Leases.
+func (mr *MockLeasesMockRecorder) Leases(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Leases", reflect.TypeOf((*MockLeases)(nil).Leases), ctx)
+}
+
+// MockWireless is a mock of Wireless interface.
+type MockWireless struct {
+	ctrl     *gomock.Controller
+	recorder *MockWirelessMockRecorder
+	isgomock struct{}
+}
+
+// MockWirelessMockRecorder is the mock recorder for MockWireless.
+type MockWirelessMockRecorder struct {
+	mock *MockWireless
+}
+
+// NewMockWireless creates a new mock instance.
+func NewMockWireless(ctrl *gomock.Controller) *MockWireless {
+	mock := &MockWireless{ctrl: ctrl}
+	mock.recorder = &MockWirelessMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWireless) EXPECT() *MockWirelessMockRecorder {
+	return m.recorder
+}
+
+// Clients mocks base method.
+func (m *MockWireless) Clients(ctx context.Context) ([]entity.WifiClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Clients", ctx)
+	ret0, _ := ret[0].([]entity.WifiClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Clients indicates an expected call of Clients.
+func (mr *MockWirelessMockRecorder) Clients(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clients", reflect.TypeOf((*MockWireless)(nil).Clients), ctx)
+}
+
+// MockHostHints is a mock of HostHints interface.
+type MockHostHints struct {
+	ctrl     *gomock.Controller
+	recorder *MockHostHintsMockRecorder
+	isgomock struct{}
+}
+
+// MockHostHintsMockRecorder is the mock recorder for MockHostHints.
+type MockHostHintsMockRecorder struct {
+	mock *MockHostHints
+}
+
+// NewMockHostHints creates a new mock instance.
+func NewMockHostHints(ctrl *gomock.Controller) *MockHostHints {
+	mock := &MockHostHints{ctrl: ctrl}
+	mock.recorder = &MockHostHintsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockHostHints) EXPECT() *MockHostHintsMockRecorder {
+	return m.recorder
+}
+
+// Hints mocks base method.
+func (m *MockHostHints) Hints(ctx context.Context) (map[string]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Hints", ctx)
+	ret0, _ := ret[0].(map[string]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Hints indicates an expected call of Hints.
+func (mr *MockHostHintsMockRecorder) Hints(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Hints", reflect.TypeOf((*MockHostHints)(nil).Hints), ctx)
+}
+
+// MockBackuper is a mock of Backuper interface.
+type MockBackuper struct {
+	ctrl     *gomock.Controller
+	recorder *MockBackuperMockRecorder
+	isgomock struct{}
+}
+
+// MockBackuperMockRecorder is the mock recorder for MockBackuper.
+type MockBackuperMockRecorder struct {
+	mock *MockBackuper
+}
+
+// NewMockBackuper creates a new mock instance.
+func NewMockBackuper(ctrl *gomock.Controller) *MockBackuper {
+	mock := &MockBackuper{ctrl: ctrl}
+	mock.recorder = &MockBackuperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockBackuper) EXPECT() *MockBackuperMockRecorder {
+	return m.recorder
+}
+
+// Backup mocks base method.
+func (m *MockBackuper) Backup(ctx context.Context, path string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Backup", ctx, path)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Backup indicates an expected call of Backup.
+func (mr *MockBackuperMockRecorder) Backup(ctx, path any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Backup", reflect.TypeOf((*MockBackuper)(nil).Backup), ctx, path)
+}
+
 // MockStateStore is a mock of StateStore interface.
 type MockStateStore struct {
 	ctrl     *gomock.Controller

@@ -11,6 +11,7 @@ const maxCommandName = 32
 // Registry holds the active modules and routes command names to handlers.
 type Registry struct {
 	commands map[string]Command
+	owner    map[string]string // command → module
 	log      *slog.Logger
 	modules  []Module
 	order    []string
@@ -18,7 +19,7 @@ type Registry struct {
 
 // NewRegistry creates an empty registry.
 func NewRegistry(log *slog.Logger) *Registry {
-	return &Registry{commands: make(map[string]Command), log: log}
+	return &Registry{commands: make(map[string]Command), owner: make(map[string]string), log: log}
 }
 
 // Add activates m when enabled and detected. Disabled or undetected modules
@@ -41,6 +42,8 @@ func (r *Registry) Add(ctx context.Context, m Module, enabled bool) error {
 		if err := r.register(c); err != nil {
 			return fmt.Errorf("module %s: %w", m.Name(), err)
 		}
+
+		r.owner[c.Name] = m.Name()
 	}
 
 	r.modules = append(r.modules, m)
@@ -70,6 +73,9 @@ func (r *Registry) Lookup(name string) (Command, bool) {
 
 	return c, ok
 }
+
+// Owner returns the module that registered a command ("" when unknown).
+func (r *Registry) Owner(name string) string { return r.owner[name] }
 
 // Has reports whether a command name is taken.
 func (r *Registry) Has(name string) bool {

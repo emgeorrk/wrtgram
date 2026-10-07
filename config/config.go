@@ -30,6 +30,16 @@ const (
 	optEnabled            = "enabled"
 )
 
+// TelegramNets are Telegram's published address ranges: the default
+// service networks the failover keeps on a live tunnel so the bot works even
+// where Telegram is blocked.
+//
+//nolint:gochecknoglobals // immutable default list
+var TelegramNets = []string{
+	"149.154.160.0/20", "91.108.4.0/22", "91.108.8.0/22", "91.108.12.0/22",
+	"91.108.16.0/22", "91.108.20.0/22", "91.108.56.0/22", "185.76.151.0/24",
+}
+
 // Source provides the raw UCI package (ubus in production, a file in dev).
 type Source interface {
 	Get(ctx context.Context, pkg string) (entity.UCIPackage, error)

@@ -22,19 +22,16 @@ const (
 	backoffFactor = 2
 )
 
-// realClock implements usecase.Clock with the wall clock.
-type realClock struct{}
-
-func (realClock) Now() time.Time                         { return time.Now() }
-func (realClock) After(d time.Duration) <-chan time.Time { return time.After(d) }
-
 func runDaemon(ctx context.Context, version string) error {
 	e, err := setup(ctx, true, true)
 	if err != nil {
 		return err
 	}
 
-	svc := e.buildServices()
+	svc, err := e.buildServices(ctx)
+	if err != nil {
+		return err
+	}
 
 	reg, err := e.buildRegistry(ctx, svc)
 	if err != nil {
@@ -55,10 +52,9 @@ func runDaemon(ctx context.Context, version string) error {
 		return err
 	}
 
-	clock := realClock{}
-	queue := notify.New(tg, clock, e.notifyChats(), e.log)
+	queue := notify.New(tg, svc.clock, e.notifyChats(), e.log)
 
-	ctl := telegram.New(tg, tg, reg, clock, e.log, telegram.Options{
+	ctl := telegram.New(tg, tg, reg, svc.clock, e.log, telegram.Options{
 		Allowed:     e.cfg.Allowed,
 		NoAllowlist: len(e.cfg.Main.ChatIDs) == 0,
 		Workers:     e.cfg.Main.Workers,

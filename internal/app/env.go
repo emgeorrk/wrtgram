@@ -124,6 +124,9 @@ func (e *env) setupFake() error {
 	return nil
 }
 
+// tmpDir is where fake mode keeps volatile state (the host's temp dir).
+func (e *env) tmpDir() string { return os.TempDir() }
+
 func envOr(name, def string) string {
 	if v := os.Getenv(name); v != "" {
 		return v

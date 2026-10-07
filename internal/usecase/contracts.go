@@ -93,6 +93,26 @@ type Tunnels interface {
 	Status(ctx context.Context, ref entity.TunnelRef) (entity.Tunnel, error)
 }
 
+// Leases lists DHCP leases.
+type Leases interface {
+	Leases(ctx context.Context) ([]entity.Lease, error)
+}
+
+// Wireless lists the stations of every access point.
+type Wireless interface {
+	Clients(ctx context.Context) ([]entity.WifiClient, error)
+}
+
+// HostHints maps MAC addresses to names known from other sources (rpcd).
+type HostHints interface {
+	Hints(ctx context.Context) (map[string]string, error)
+}
+
+// Backuper writes the configuration archive (sysupgrade -b).
+type Backuper interface {
+	Backup(ctx context.Context, path string) error
+}
+
 // StateStore persists small JSON documents by name.
 type StateStore interface {
 	Load(name string, v any) error

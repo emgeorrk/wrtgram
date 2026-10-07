@@ -179,7 +179,7 @@ func (c *Controller) handleCommand(ctx context.Context, u entity.Update, name st
 
 	reply := c.invoke(ctx, cmd.Handle, req, u.ChatID)
 	if cmd.Confirm && reply.Document == nil {
-		nonce := c.confirms.add(cmd.Name, u.ChatID, c.clock.Now())
+		nonce := c.confirms.add(cmd.Name, u.ChatID, args, c.clock.Now())
 		reply.Keyboard = [][]entity.Button{{
 			{Text: "✅ Yes", Data: cmd.Name + ":" + confirmYes + ":" + nonce},
 			{Text: "✖️ Cancel", Data: cmd.Name + ":" + confirmNo + ":" + nonce},
@@ -206,11 +206,15 @@ func (c *Controller) handleCallback(ctx context.Context, u entity.Update) {
 	switch {
 	case cmd.Confirm:
 		action, nonce, _ := strings.Cut(payload, ":")
-		if !c.confirms.take(nonce, cmd.Name, u.ChatID, c.clock.Now()) {
+
+		args, ok := c.confirms.take(nonce, cmd.Name, u.ChatID, c.clock.Now())
+		if !ok {
 			c.answer(ctx, u.CallbackID, "This confirmation has expired, send the command again.")
 
 			return
 		}
+
+		req.Args = args
 
 		if action != confirmYes {
 			reply = module.Reply{Text: "Canceled.", Edit: true}
