@@ -70,7 +70,15 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           cd out
+          # ipk names carry the architecture, apk names do not: normalise to
+          # wrtgram_<version>_<arch>_<branch>.<ext> so nothing overwrites.
           for f in *; do
-            mv "$f" "${f%.*}_${{ matrix.branch }}.${f##*.}"
+            base="${f%.*}"; ext="${f##*.}"
+            case "$base" in
+              *"${{ matrix.arch }}"*) ;;
+              *) base="${base}_${{ matrix.arch }}" ;;
+            esac
+            mv "$f" "${base}_${{ matrix.branch }}.${ext}"
           done
+          ls -l
           gh release upload "$TAG" * --clobber --repo "$GITHUB_REPOSITORY"
