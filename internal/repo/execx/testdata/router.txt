@@ -109,7 +109,7 @@ ping: sendto: Network unreachable
 >>> ubus call uci set
 >>> ubus call uci commit
 >>> ubus call service list
-{"dnsmasq": {"instances": {"cfg01411c": {"running": true, "pid": 1234}}}, "dropbear": {"instances": {"instance1": {"running": true, "pid": 1300}}}, "wrtgram": {"instances": {"instance1": {"running": true, "pid": 4242}}}, "adblock": {}, "cron": {"instances": {"instance1": {"running": false}}}}
+{"dnsmasq": {"instances": {"cfg01411c": {"running": true, "pid": 1234, "respawn": {"threshold": 3600, "timeout": 5, "retry": 5}}}}, "dropbear": {"instances": {"instance1": {"running": true, "pid": 1300}}}, "wrtgram": {"instances": {"instance1": {"running": true, "pid": 4242}}}, "adblock": {"instances": {"adblock": {"running": false, "command": ["/usr/bin/adblock.sh", "reload"], "exit_code": 0}}}, "cron": {"instances": {"instance1": {"running": false, "respawn": {"threshold": 3600, "timeout": 5, "retry": 5}}}}, "oops": {"instances": {"instance1": {"running": false, "exit_code": 1}}}}
 >>> /etc/init.d/adblock restart
 >>> /bin/sh -c echo 'download 100 Mbit/s'
 download 100 Mbit/s

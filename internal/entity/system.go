@@ -32,6 +32,33 @@ type Temperature struct {
 // Service is a procd service as reported by ubus `service list`.
 type Service struct {
 	Name      string
+	Detail    string // optional status from the service's own reporting (e.g. adblock)
 	Instances int
 	Running   int
+	Failed    int // instances that should run (respawn) or exited with an error
 }
+
+// State classifies the service for display.
+func (s Service) State() ServiceState {
+	switch {
+	case s.Failed > 0:
+		return ServiceFailed
+	case s.Instances == 0:
+		return ServiceIdle
+	case s.Running == s.Instances:
+		return ServiceRunning
+	}
+
+	return ServiceDone // one-shot instances that finished successfully
+}
+
+// ServiceState is the display classification of a procd service.
+type ServiceState int
+
+// Service states.
+const (
+	ServiceRunning ServiceState = iota
+	ServiceDone
+	ServiceIdle
+	ServiceFailed
+)

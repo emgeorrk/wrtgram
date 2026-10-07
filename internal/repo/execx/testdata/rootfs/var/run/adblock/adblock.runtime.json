@@ -1,0 +1,1 @@
+{ "adblock_status": "enabled", "frontend_ver": "4.5.8-r3", "backend_ver": "4.5.8-r3", "blocked_domains": "218 400", "active_feeds": [ "adguard", "adguard_tracking", "doh_blocklist" ], "last_run": "mode: reload, date / time: 2026-10-07 04:40:47, duration: 0m 42s" }

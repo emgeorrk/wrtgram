@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/emgeorrk/wrtgram/internal/entity"
 	"github.com/emgeorrk/wrtgram/internal/module"
 	"github.com/emgeorrk/wrtgram/internal/usecase/services"
 	"github.com/emgeorrk/wrtgram/pkg/tgtext"
@@ -50,29 +51,37 @@ func (m *Module) list(ctx context.Context, _ module.Request) (module.Reply, erro
 	b.WriteString("⚙️ " + tgtext.B("Services") + "\n")
 
 	for _, s := range list {
-		mark := "✅"
-
-		switch {
-		case s.Instances == 0:
-			mark = "▫️"
-		case s.Running < s.Instances:
-			mark = "❌"
-		}
-
-		fmt.Fprintf(&b, "%s %s", mark, tgtext.Esc(s.Name))
+		fmt.Fprintf(&b, "%s %s", mark(s.State()), tgtext.Esc(s.Name))
 
 		if s.Instances > 1 {
 			fmt.Fprintf(&b, " (%d/%d)", s.Running, s.Instances)
 		}
 
+		if s.Detail != "" {
+			fmt.Fprintf(&b, " — %s", tgtext.Esc(s.Detail))
+		}
+
 		b.WriteString("\n")
 	}
+
+	b.WriteString("\n✅ running · ✔️ finished (one-shot) · ▫️ no instance · ❌ failed")
 
 	if wl := m.svc.Whitelist(); len(wl) > 0 {
 		fmt.Fprintf(&b, "\nRestartable: %s", tgtext.Esc(strings.Join(wl, ", ")))
 	}
 
 	return module.Reply{Text: strings.TrimRight(b.String(), "\n")}, nil
+}
+
+func mark(st entity.ServiceState) string {
+	marks := map[entity.ServiceState]string{
+		entity.ServiceRunning: "✅",
+		entity.ServiceDone:    "✔️",
+		entity.ServiceIdle:    "▫️",
+		entity.ServiceFailed:  "❌",
+	}
+
+	return marks[st]
 }
 
 // restart is a Confirm command: the first call validates and asks, the

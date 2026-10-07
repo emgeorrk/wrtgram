@@ -3,6 +3,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -16,19 +17,20 @@ var ErrNotAllowed = errors.New("service is not in the restart whitelist")
 
 // Service is the services usecase.
 type Service struct {
-	ubus    usecase.Ubus
-	run     usecase.Runner
-	allowed map[string]bool
+	ubus     usecase.Ubus
+	run      usecase.Runner
+	annotate Annotator
+	allowed  map[string]bool
 }
 
-// New creates the usecase; allowed is the restart whitelist.
-func New(ubus usecase.Ubus, run usecase.Runner, allowed []string) *Service {
+// New creates the usecase; allowed is the restart whitelist, annotate may be nil.
+func New(ubus usecase.Ubus, run usecase.Runner, allowed []string, annotate Annotator) *Service {
 	m := make(map[string]bool, len(allowed))
 	for _, a := range allowed {
 		m[a] = true
 	}
 
-	return &Service{ubus: ubus, run: run, allowed: m}
+	return &Service{ubus: ubus, run: run, annotate: annotate, allowed: m}
 }
 
 // Allowed reports whether name may be restarted.
@@ -48,9 +50,14 @@ func (s *Service) Whitelist() []string {
 
 type listReply map[string]struct {
 	Instances map[string]struct {
-		Running bool `json:"running"`
+		Respawn  json.RawMessage `json:"respawn"`
+		ExitCode int             `json:"exit_code"`
+		Running  bool            `json:"running"`
 	} `json:"instances"`
 }
+
+// Annotator returns extra status text for a service ("" for none).
+type Annotator func(ctx context.Context, name string) string
 
 // List returns every procd service with its instance counts, sorted by name.
 func (s *Service) List(ctx context.Context) ([]entity.Service, error) {
@@ -65,9 +72,17 @@ func (s *Service) List(ctx context.Context) ([]entity.Service, error) {
 		e := entity.Service{Name: name, Instances: len(svc.Instances)}
 
 		for _, inst := range svc.Instances {
-			if inst.Running {
+			switch {
+			case inst.Running:
 				e.Running++
+			case len(inst.Respawn) > 0 || inst.ExitCode != 0:
+				// A daemon that should respawn, or a script that failed.
+				e.Failed++
 			}
+		}
+
+		if s.annotate != nil {
+			e.Detail = s.annotate(ctx, name)
 		}
 
 		out = append(out, e)

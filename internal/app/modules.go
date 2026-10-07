@@ -18,6 +18,7 @@ import (
 	systemmod "github.com/emgeorrk/wrtgram/internal/module/system"
 	thermalmod "github.com/emgeorrk/wrtgram/internal/module/thermal"
 	vpnmod "github.com/emgeorrk/wrtgram/internal/module/vpn"
+	"github.com/emgeorrk/wrtgram/internal/repo/adblock"
 	"github.com/emgeorrk/wrtgram/internal/repo/dhcp"
 	"github.com/emgeorrk/wrtgram/internal/repo/iproute"
 	"github.com/emgeorrk/wrtgram/internal/repo/logread"
@@ -103,7 +104,7 @@ func (e *env) buildServices(ctx context.Context) (*services, error) {
 		backup:   backup.New(backuper, clock, e.volatile(), e.cfg.Module(backupmod.Name).Opt("password", "")),
 		backuper: backuper,
 		custom:   custom.New(e.run),
-		services: svcuc.New(e.ubus, e.run, e.cfg.Module(servicesmod.Name).List("service")),
+		services: svcuc.New(e.ubus, e.run, e.cfg.Module(servicesmod.Name).List("service"), adblock.Annotate(e.fsys)),
 		clock:    clock,
 	}
 
