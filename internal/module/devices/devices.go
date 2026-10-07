@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/emgeorrk/wrtgram/internal/entity"
 	"github.com/emgeorrk/wrtgram/internal/module"
@@ -38,6 +39,8 @@ type Module struct {
 	notify   module.Notify
 	log      *slog.Logger
 	detect   func(ctx context.Context) bool
+	names    map[string]string // MAC → hostname from hotplug events (for the card buttons)
+	mu       sync.Mutex
 	pageSize int
 }
 
@@ -50,7 +53,7 @@ func New(svc *devices.Service, manager *devices.Manager, known *devices.Known, d
 		pageSize = DefaultPageSize
 	}
 
-	return &Module{svc: svc, manager: manager, known: known, detect: detect, pageSize: pageSize, log: log}
+	return &Module{svc: svc, manager: manager, known: known, detect: detect, pageSize: pageSize, log: log, names: map[string]string{}}
 }
 
 // Name implements module.Module.
@@ -114,6 +117,12 @@ func (m *Module) OnDHCP(ctx context.Context, ev entity.DHCPEvent) {
 	}
 
 	mac := strings.ToLower(ev.MAC)
+
+	if ev.Hostname != "" {
+		m.mu.Lock()
+		m.names[mac] = ev.Hostname
+		m.mu.Unlock()
+	}
 
 	m.notify.Message(ctx, entity.Message{
 		Text:     card(mac, ev.IP, ev.Hostname, ""),
@@ -221,6 +230,10 @@ func (m *Module) action(ctx context.Context, req module.Request) (module.Reply, 
 		ip = extra
 	}
 
+	if name == "" {
+		name = m.eventName(mac)
+	}
+
 	return module.Reply{Text: card(mac, ip, name, result), Keyboard: m.cardKeyboard(ctx, mac, ip), Edit: true, Toast: result}, nil
 }
 
@@ -241,10 +254,20 @@ func (m *Module) lookup(ctx context.Context, mac string) (ip, name string) {
 	return "", ""
 }
 
+// nameOf prefers the lease/hint name and falls back to the hotplug event's.
 func (m *Module) nameOf(ctx context.Context, mac string) string {
-	_, name := m.lookup(ctx, mac)
+	if _, name := m.lookup(ctx, mac); name != "" {
+		return name
+	}
 
-	return name
+	return m.eventName(mac)
+}
+
+func (m *Module) eventName(mac string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	return m.names[mac]
 }
 
 func (m *Module) list(ctx context.Context, _ module.Request) (module.Reply, error) {
