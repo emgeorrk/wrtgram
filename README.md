@@ -211,6 +211,11 @@ real router; `scripts/fixtures.sh` records a new set from a router. With
 `WRTGRAM_TOKEN` and `WRTGRAM_CHAT_IDS` set, `make run-fake` runs the whole
 bot on the workstation.
 
+`go.mod` declares `go 1.23` on purpose: the OpenWrt 24.10 SDK ships Go
+1.23.12 and must still be able to build the package (25.12 ships 1.26).
+Release binaries are compiled with the current Go toolchain in CI; the
+directive only caps the language version used in the sources.
+
 Layout: `cmd/wrtgram` → `internal/app` (wiring) → `internal/controller`
 (Telegram dispatcher, IPC socket) → `internal/module/<name>` (commands,
 notifiers, rendering) → `internal/usecase` (rules, ports) →
