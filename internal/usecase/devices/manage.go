@@ -124,18 +124,17 @@ func (m *Manager) Block(ctx context.Context, mac string) error {
 	zone := m.lanZone(ctx)
 	name := ruleName(mac)
 
-	for _, r := range []struct {
-		values  map[string]any
-		section string
-	}{
-		{section: name, values: map[string]any{"name": "wrtgram block " + mac, "src": zone, "dest": "*", "src_mac": mac, "proto": protoAll, "target": targetReject, optEnabled: "1"}},
-		{section: name + "_in", values: map[string]any{"name": "wrtgram block " + mac + " (router)", "src": zone, "src_mac": mac, "proto": protoAll, "target": targetReject, optEnabled: "1"}},
-	} {
-		if err := m.uci.AddSection(ctx, pkgFirewall, typeRule, r.section); err != nil {
+	rules := map[string]map[string]any{
+		name:         blockRule(zone, mac, "wrtgram block "+mac, true),
+		name + "_in": blockRule(zone, mac, "wrtgram block "+mac+" (router)", false),
+	}
+
+	for section, values := range rules {
+		if err := m.uci.AddSection(ctx, pkgFirewall, typeRule, section); err != nil {
 			continue // the rule exists already; Set below refreshes it
 		}
 
-		if err := m.uci.Set(ctx, pkgFirewall, r.section, r.values); err != nil {
+		if err := m.uci.Set(ctx, pkgFirewall, section, values); err != nil {
 			return err
 		}
 	}
@@ -196,6 +195,17 @@ func (m *Manager) reload(ctx context.Context, init string) error {
 }
 
 func ruleName(mac string) string { return rulePrefix + strings.ReplaceAll(mac, ":", "") }
+
+// blockRule builds a fw4 rule rejecting mac; forward rules target every
+// zone ("*"), the other variant guards the router itself (input).
+func blockRule(zone, mac, title string, forward bool) map[string]any {
+	v := map[string]any{"name": title, "src": zone, "src_mac": mac, "proto": protoAll, "target": targetReject, optEnabled: "1"}
+	if forward {
+		v["dest"] = "*"
+	}
+
+	return v
+}
 
 // normMAC validates a 48-bit MAC and returns it lower-case, colon separated.
 func normMAC(s string) (string, bool) {
