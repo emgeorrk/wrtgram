@@ -194,6 +194,35 @@ func (m *MockUCI) EXPECT() *MockUCIMockRecorder {
 	return m.recorder
 }
 
+// AddAnonymous mocks base method.
+func (m *MockUCI) AddAnonymous(ctx context.Context, pkg, typ string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddAnonymous", ctx, pkg, typ)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddAnonymous indicates an expected call of AddAnonymous.
+func (mr *MockUCIMockRecorder) AddAnonymous(ctx, pkg, typ any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAnonymous", reflect.TypeOf((*MockUCI)(nil).AddAnonymous), ctx, pkg, typ)
+}
+
+// AddSection mocks base method.
+func (m *MockUCI) AddSection(ctx context.Context, pkg, typ, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddSection", ctx, pkg, typ, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddSection indicates an expected call of AddSection.
+func (mr *MockUCIMockRecorder) AddSection(ctx, pkg, typ, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSection", reflect.TypeOf((*MockUCI)(nil).AddSection), ctx, pkg, typ, name)
+}
+
 // Commit mocks base method.
 func (m *MockUCI) Commit(ctx context.Context, pkg string) error {
 	m.ctrl.T.Helper()
@@ -206,6 +235,20 @@ func (m *MockUCI) Commit(ctx context.Context, pkg string) error {
 func (mr *MockUCIMockRecorder) Commit(ctx, pkg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockUCI)(nil).Commit), ctx, pkg)
+}
+
+// Delete mocks base method.
+func (m *MockUCI) Delete(ctx context.Context, pkg, section string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, pkg, section)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockUCIMockRecorder) Delete(ctx, pkg, section any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUCI)(nil).Delete), ctx, pkg, section)
 }
 
 // Get mocks base method.
@@ -224,7 +267,7 @@ func (mr *MockUCIMockRecorder) Get(ctx, pkg any) *gomock.Call {
 }
 
 // Set mocks base method.
-func (m *MockUCI) Set(ctx context.Context, pkg, section string, values map[string]string) error {
+func (m *MockUCI) Set(ctx context.Context, pkg, section string, values map[string]any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", ctx, pkg, section, values)
 	ret0, _ := ret[0].(error)

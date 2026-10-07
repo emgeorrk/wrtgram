@@ -22,7 +22,11 @@ var (
 	errFile   = errors.New("uci json file")
 )
 
-const keyConfig = "config"
+const (
+	keyConfig  = "config"
+	keySection = "section"
+	keyType    = "type"
+)
 
 // Client implements usecase.UCI and config.Source.
 type Client struct {
@@ -51,7 +55,7 @@ func (c *Client) Get(ctx context.Context, pkg string) (entity.UCIPackage, error)
 // Set changes options of a section (uncommitted). Values are strings or
 // []string for lists.
 func (c *Client) Set(ctx context.Context, pkg, section string, values map[string]any) error {
-	args := map[string]any{keyConfig: pkg, "section": section, "values": values}
+	args := map[string]any{keyConfig: pkg, keySection: section, "values": values}
 
 	if err := c.ubus.Call(ctx, "uci", "set", args, nil); err != nil {
 		return fmt.Errorf("%w: %s.%s: %w", errSet, pkg, section, err)
@@ -62,10 +66,32 @@ func (c *Client) Set(ctx context.Context, pkg, section string, values map[string
 
 // AddSection creates a named section (uncommitted); an existing one is kept.
 func (c *Client) AddSection(ctx context.Context, pkg, typ, name string) error {
-	args := map[string]any{keyConfig: pkg, "type": typ, "name": name}
+	args := map[string]any{keyConfig: pkg, keyType: typ, "name": name}
 
 	if err := c.ubus.Call(ctx, "uci", "add", args, nil); err != nil {
 		return fmt.Errorf("%w: add %s.%s: %w", errSet, pkg, name, err)
+	}
+
+	return nil
+}
+
+// AddAnonymous creates an unnamed section (uncommitted).
+func (c *Client) AddAnonymous(ctx context.Context, pkg, typ string) (string, error) {
+	var reply struct {
+		Section string `json:"section"`
+	}
+
+	if err := c.ubus.Call(ctx, "uci", "add", map[string]any{keyConfig: pkg, keyType: typ}, &reply); err != nil {
+		return "", fmt.Errorf("%w: add %s (%s): %w", errSet, pkg, typ, err)
+	}
+
+	return reply.Section, nil
+}
+
+// Delete removes a section (uncommitted).
+func (c *Client) Delete(ctx context.Context, pkg, section string) error {
+	if err := c.ubus.Call(ctx, "uci", "delete", map[string]any{keyConfig: pkg, keySection: section}, nil); err != nil {
+		return fmt.Errorf("%w: delete %s.%s: %w", errSet, pkg, section, err)
 	}
 
 	return nil

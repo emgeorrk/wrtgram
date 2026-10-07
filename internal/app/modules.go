@@ -181,7 +181,7 @@ func (e *env) buildRegistry(ctx context.Context, svc *services) (*module.Registr
 		return "router"
 	}
 
-	svc.devmod = devicesmod.New(svc.devices, e.knownDevices(), func(ctx context.Context) bool {
+	svc.devmod = devicesmod.New(svc.devices, devices.NewManager(e.uci, e.run), e.knownDevices(), func(ctx context.Context) bool {
 		ifaces, err := svc.wifi.Interfaces(ctx)
 
 		return svc.leases.Exists() || (err == nil && len(ifaces) > 0)

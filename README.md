@@ -23,7 +23,8 @@ themselves based on what the router has installed.
 |---|---|---|
 | `/status` | model, release, uptime, load, memory, flash, temperatures, WAN, VPN | — |
 | `/wan` | upstream address, gateway, DNS | — |
-| `/devices` | DHCP leases merged with Wi-Fi associations, paginated | dnsmasq and/or hostapd |
+| `/devices` | DHCP leases merged with Wi-Fi associations, paginated; 📌 static lease, ⛔ blocked | dnsmasq and/or hostapd |
+| `/blocked` | blocked devices with Unblock buttons | — |
 | `/vpn`, `/vpn_off`, `/vpn_on` | tunnel state, switch the VPN off and on | `wg` or `awg` |
 | `/failover` | failover details: roles, timers, routes | failover configured |
 | `/backup` | `sysupgrade -b` archive, AES-256 encrypted, sent as a file | `sysupgrade` |
@@ -33,7 +34,9 @@ themselves based on what the router has installed.
 | `/<name>` | your own shell commands from UCI | `config command` |
 | `/help` | the list above, built from the active modules | — |
 
-Notifications: router started, VPN failover switches, new device on the LAN,
+Notifications: router started, VPN failover switches, new device on the LAN
+(with **📌 Remember IP** — a static DHCP lease in `/etc/config/dhcp` — and
+**⛔ Block** — fw4 rules rejecting the MAC towards every zone and the router),
 SSH and LuCI logins (and failed attempts, rate-limited per address),
 overheating with an all-clear, and a weekly encrypted backup.
 

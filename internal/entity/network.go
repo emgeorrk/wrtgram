@@ -24,6 +24,8 @@ type Device struct {
 	Band     string // "2.4 GHz", "5 GHz", "6 GHz" or ""
 	Signal   int    // dBm, 0 when unknown
 	Wireless bool
+	Static   bool // has a static DHCP lease
+	Blocked  bool // has a wrtgram firewall block rule
 }
 
 // Lease is one DHCP lease.

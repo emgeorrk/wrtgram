@@ -39,6 +39,9 @@ type UCI interface {
 	Get(ctx context.Context, pkg string) (entity.UCIPackage, error)
 	Set(ctx context.Context, pkg, section string, values map[string]any) error
 	AddSection(ctx context.Context, pkg, typ, name string) error
+	// AddAnonymous creates an unnamed section and returns its generated name.
+	AddAnonymous(ctx context.Context, pkg, typ string) (string, error)
+	Delete(ctx context.Context, pkg, section string) error
 	Commit(ctx context.Context, pkg string) error
 }
 

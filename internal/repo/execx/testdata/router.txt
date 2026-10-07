@@ -117,3 +117,12 @@ download 100 Mbit/s
 Wed Oct  7 14:03:14 2026 authpriv.notice dropbear[22151]: Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:x from 192.168.1.222:50670
 Wed Oct  7 14:03:20 2026 authpriv.notice dropbear[22200]: Bad password attempt for 'root' from 203.0.113.9:4444
 Wed Oct  7 14:03:25 2026 daemon.info rpcd[1234]: luci: accepted login on /admin for root from 192.168.1.213
+>>> ubus call uci get {"config":"firewall"}
+{"values": {"cfg02dc81": {".anonymous": true, ".type": "zone", ".name": "cfg02dc81", ".index": 1, "name": "lan", "network": ["lan"], "input": "ACCEPT", "output": "ACCEPT", "forward": "ACCEPT"},
+	"wrtgram_block_aabbccddee09": {".anonymous": false, ".type": "rule", ".name": "wrtgram_block_aabbccddee09", ".index": 9, "name": "wrtgram block aa:bb:cc:dd:ee:09", "src": "lan", "dest": "*", "src_mac": "aa:bb:cc:dd:ee:09", "target": "REJECT", "enabled": "1"}}}
+>>> ubus call uci add {"config":"dhcp","type":"host"}
+{"section": "cfg0fake"}
+>>> ubus call uci add
+>>> ubus call uci delete
+>>> /etc/init.d/dnsmasq reload
+>>> /etc/init.d/firewall reload
