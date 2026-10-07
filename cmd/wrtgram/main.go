@@ -8,6 +8,7 @@
 //	wrtgram event dhcp            report a dnsmasq hotplug event (called from /etc/hotplug.d)
 //	wrtgram probe                 print the detected modules and sample data
 //	wrtgram check-config          validate /etc/config/wrtgram
+//	wrtgram setup                 interactive setup (token, chat id, backup password)
 //	wrtgram version
 package main
 

@@ -1,0 +1,74 @@
+# Builds .ipk/.apk packages with the OpenWrt SDK for a few common
+# architectures and attaches them to the release. Best effort: a failure
+# here never blocks the binary release.
+name: OpenWrt packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach packages to
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  sdk:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: aarch64_cortex-a53, branch: openwrt-25.12 }
+          - { arch: aarch64_cortex-a72, branch: openwrt-25.12 }
+          - { arch: aarch64_generic,    branch: openwrt-25.12 }
+          - { arch: arm_cortex-a7_neon-vfpv4, branch: openwrt-25.12 }
+          - { arch: mipsel_24kc,        branch: openwrt-25.12 }
+          - { arch: mips_24kc,          branch: openwrt-25.12 }
+          - { arch: x86_64,             branch: openwrt-25.12 }
+          - { arch: aarch64_cortex-a53, branch: openwrt-24.10 }
+          - { arch: mipsel_24kc,        branch: openwrt-24.10 }
+          - { arch: x86_64,             branch: openwrt-24.10 }
+    container:
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.branch }}
+      options: --user root
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src
+
+      - name: Build package with the SDK
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -e
+          cd /builder
+          ./scripts/feeds update -a
+          ./scripts/feeds install golang
+          rm -rf package/wrtgram
+          cp -r "$GITHUB_WORKSPACE/src/package/wrtgram" package/wrtgram
+          # Build from the checked-out tree instead of downloading the tag.
+          sed -i "s|^PKG_VERSION:=.*|PKG_VERSION:=${TAG#v}|" package/wrtgram/Makefile
+          mkdir -p dl
+          tar -C "$GITHUB_WORKSPACE" --transform "s|^src|wrtgram-${TAG#v}|" -czf "dl/wrtgram-${TAG#v}.tar.gz" src
+          sed -i 's|^PKG_HASH:=.*|PKG_HASH:=skip|' package/wrtgram/Makefile
+          make defconfig
+          make package/wrtgram/compile V=s -j"$(nproc)"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          find bin/packages -name 'wrtgram*' \( -name '*.ipk' -o -name '*.apk' \) -exec cp {} "$GITHUB_WORKSPACE/out/" \;
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          cd "$GITHUB_WORKSPACE/out"
+          for f in *; do
+            mv "$f" "${f%.*}_${{ matrix.branch }}.${f##*.}"
+          done
+          gh release upload "$TAG" * --clobber --repo "$GITHUB_REPOSITORY"

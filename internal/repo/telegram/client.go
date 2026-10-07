@@ -155,6 +155,29 @@ func toUpdate(u *models.Update) (entity.Update, bool) {
 	return entity.Update{}, false
 }
 
+// LastChat waits up to wait for the next message and returns its chat (the
+// setup wizard uses it to learn the owner's chat id). It consumes the update
+// stream of this client, so it is meant for a short-lived client.
+func (c *Client) LastChat(ctx context.Context, wait time.Duration) (chatID int64, username string, err error) {
+	ctx, cancel := context.WithTimeout(ctx, wait)
+	defer cancel()
+
+	for {
+		select {
+		case u, ok := <-c.Updates(ctx):
+			if !ok {
+				return 0, "", nil
+			}
+
+			if u.ChatID != 0 {
+				return u.ChatID, u.Username, nil
+			}
+		case <-ctx.Done():
+			return 0, "", nil
+		}
+	}
+}
+
 // Me implements usecase.Sender.
 func (c *Client) Me(ctx context.Context) (entity.BotInfo, error) {
 	u, err := c.bot.GetMe(ctx)

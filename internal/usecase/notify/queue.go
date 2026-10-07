@@ -22,6 +22,9 @@ const (
 	baseBackoff = 2 * time.Second
 	maxBackoff  = 60 * time.Second
 	backoffMul  = 4
+	// sendTimeout bounds one delivery attempt; an attempt in flight at
+	// shutdown is allowed to finish (procd waits term_timeout = 10 s).
+	sendTimeout = 8 * time.Second
 )
 
 type item struct {
@@ -131,6 +134,9 @@ func (q *Queue) deliver(ctx context.Context, it item) {
 }
 
 func (q *Queue) send(ctx context.Context, chat int64, it item) error {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), sendTimeout)
+	defer cancel()
+
 	if it.doc == nil {
 		_, err := q.sender.SendMessage(ctx, chat, it.msg)
 

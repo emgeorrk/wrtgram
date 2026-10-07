@@ -67,7 +67,7 @@ func TestClientGetSetCommit(t *testing.T) {
 		t.Fatalf("Get: %+v %v", pkg, err)
 	}
 
-	if err := c.Set(ctx, "wrtgram", "failover", map[string]string{"manual_off": "1"}); err != nil {
+	if err := c.Set(ctx, "wrtgram", "failover", map[string]any{"manual_off": "1"}); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
 

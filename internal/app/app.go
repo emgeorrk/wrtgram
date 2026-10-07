@@ -25,6 +25,8 @@ func Main(cmd string, args []string, version string) error {
 		return probe(ctx)
 	case "check-config":
 		return checkConfig(ctx)
+	case "setup":
+		return setupCmd(ctx)
 	case "notify":
 		return notifyCmd(ctx, args)
 	case "send-file":
@@ -51,5 +53,6 @@ const usage = `Usage:
   wrtgram event dhcp                 report a dnsmasq hotplug event
   wrtgram probe                      print detected modules and sample data
   wrtgram check-config               validate /etc/config/wrtgram
+  wrtgram setup                      interactive setup: token, chat id, backup password
   wrtgram version
 `

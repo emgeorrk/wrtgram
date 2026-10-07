@@ -33,10 +33,12 @@ type Ubus interface {
 	List(ctx context.Context, pattern string) ([]string, error)
 }
 
-// UCI reads and writes UCI configuration.
+// UCI reads and writes UCI configuration. Set values are strings or
+// []string (lists).
 type UCI interface {
 	Get(ctx context.Context, pkg string) (entity.UCIPackage, error)
-	Set(ctx context.Context, pkg, section string, values map[string]string) error
+	Set(ctx context.Context, pkg, section string, values map[string]any) error
+	AddSection(ctx context.Context, pkg, typ, name string) error
 	Commit(ctx context.Context, pkg string) error
 }
 

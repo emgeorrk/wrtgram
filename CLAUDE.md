@@ -40,13 +40,13 @@ must be able to build the package. No `tool` directive, no stdlib
 Clean-architecture layers (evrone/go-clean-template), one-directional:
 
 ```
-cmd/wrtgram            main: subcommand switch (run | notify | send-file | event | probe | check-config | version)
+cmd/wrtgram            main: subcommand switch (run | notify | send-file | event | probe | check-config | setup | version)
   → internal/app       wiring: config → adapters → modules.Detect → registry → telegram → notifiers → IPC
     → internal/controller/telegram  update dispatcher: auth → parse → per-chat workers → dispatch → render → send
     → internal/controller/ipc       unix socket for the CLI (notify, send-file, event dhcp)
     → internal/module/<name>        feature modules: Detect + Commands + Notifiers + rendering (the ONLY layer that knows Telegram HTML)
       → internal/usecase/<name>     rules (failover state machine, device merge, throttling, hysteresis) — depend only on entity + ports
-        → internal/repo/<name>      adapters: execx, ubus, uci, sysfs, wg, iproute, logread, sysupgrade, state, telegram
+        → internal/repo/<name>      adapters: execx, ubus, uci, sysfs, netifd, wg, iproute, wifi, dhcp, logread, sysupgrade, state, telegram
 internal/entity        domain types, zero deps
 internal/usecase/contracts.go   every port; mocks generated into internal/usecase/mocks
 config                 UCI package `wrtgram` → typed Config (+ env overrides for dev)
@@ -82,6 +82,17 @@ example to `package/wrtgram/files/wrtgram.config` and the README.
 - Linting is strict (`gofumpt`, `fieldalignment`, `wsl_v5`, `funlen` 65/40,
   `gocyclo` 10, `mnd`, `err113`, `goconst`). Deliberate exceptions carry
   `//nolint:<linter> // reason`. Run `make lint` before finishing.
+
+## Runtime facts
+
+- Daemon paths: `/etc/config/wrtgram` (UCI, 600), `/etc/wrtgram/` (persistent
+  state: `manual.json`, `backup.json`, `known_macs`), `/var/run/wrtgram/`
+  (volatile: `failover.json`, temporary backups), `/var/run/wrtgram.sock` (IPC).
+- `uci commit` through rpcd fires a `config.change` event and procd restarts
+  the service (reload trigger). That is why the manual VPN switch is a state
+  file, not a UCI option.
+- Notifiers run under a supervisor with backoff; the queue retries sends,
+  honours 429, and lets an in-flight send finish during shutdown.
 
 ## Router facts worth remembering
 
