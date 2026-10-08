@@ -64,7 +64,7 @@ func Step(prev entity.FailoverState, health map[string]bool, now time.Time, r Ru
 
 	if want != prev.Dev {
 		if !prev.ManualOff && !next.ManualOff {
-			events = append(events, event(prev, want, now, r))
+			events = append(events, event(prev, next.Tunnels, want, now, r))
 		}
 
 		next.Dev, next.Since = want, now
@@ -141,19 +141,38 @@ func downSince(tunnels []entity.TunnelHealth, name string) time.Time {
 	return time.Time{}
 }
 
-func event(prev entity.FailoverState, want string, now time.Time, r Rules) entity.FailoverEvent {
+// event describes the change. Downtime is how long the tunnel that matters
+// was down, not how long traffic used the previous route (prev.Since is the
+// last route change, possibly hours before the outage):
+//   - primary back: the primary's outage (prev.Tunnels, it is healthy now);
+//   - switched / all down: the outage of the tunnel traffic left;
+//   - tunnel up: how long traffic went direct.
+func event(prev entity.FailoverState, tunnels []entity.TunnelHealth, want string, now time.Time, r Rules) entity.FailoverEvent {
 	ev := entity.FailoverEvent{From: prev.Dev, To: want, Downtime: now.Sub(prev.Since)}
 
 	switch {
 	case want == r.Primary():
 		ev.Kind = entity.FailoverPrimaryBack
+		ev.Downtime = downFor(prev.Tunnels, want, now, ev.Downtime)
 	case want == "":
 		ev.Kind = entity.FailoverAllDown
+		ev.Downtime = downFor(tunnels, prev.Dev, now, ev.Downtime)
 	case prev.Dev == "":
 		ev.Kind = entity.FailoverTunnelUp
 	default:
 		ev.Kind = entity.FailoverSwitched
+		ev.Downtime = downFor(tunnels, prev.Dev, now, ev.Downtime)
 	}
 
 	return ev
+}
+
+// downFor is how long the tunnel has been down; fallback when it was up
+// (e.g. /vpn_on returns to a healthy primary).
+func downFor(tunnels []entity.TunnelHealth, name string, now time.Time, fallback time.Duration) time.Duration {
+	if since := downSince(tunnels, name); !since.IsZero() {
+		return now.Sub(since)
+	}
+
+	return fallback
 }

@@ -30,6 +30,7 @@ func TestStep(t *testing.T) {
 		wantMode  entity.FailoverMode
 		wantSvc   string
 		wantKinds []entity.FailoverEventKind
+		wantDown  []time.Duration // per event; checked when set
 	}{
 		{
 			name:     "all healthy stays on primary, no events",
@@ -52,6 +53,22 @@ func TestStep(t *testing.T) {
 			probes:    []probe{{h(false, true), 0}, {h(false, true), 5 * time.Minute}, {h(true, true), 6 * time.Minute}},
 			wantDev:   "awg0", wantMode: entity.FailoverPrimary, wantSvc: "awg0",
 			wantKinds: []entity.FailoverEventKind{entity.FailoverSwitched, entity.FailoverPrimaryBack},
+			wantDown:  []time.Duration{5 * time.Minute, 6 * time.Minute},
+		},
+		{
+			// Since is the last route change (hours ago), the outage is minutes.
+			name:      "long on primary, short outage: downtime counts from the outage",
+			probes:    []probe{{h(true, true), 0}, {h(false, true), 6 * time.Hour}, {h(false, true), 6*time.Hour + 5*time.Minute}, {h(true, true), 6*time.Hour + 12*time.Minute}},
+			wantDev:   "awg0", wantMode: entity.FailoverPrimary, wantSvc: "awg0",
+			wantKinds: []entity.FailoverEventKind{entity.FailoverSwitched, entity.FailoverPrimaryBack},
+			wantDown:  []time.Duration{5 * time.Minute, 12 * time.Minute},
+		},
+		{
+			name:      "long on primary, both die, backup returns: outage, then time direct",
+			probes:    []probe{{h(true, true), 0}, {h(false, false), 2 * time.Hour}, {h(false, false), 2*time.Hour + 5*time.Minute}, {h(false, true), 2*time.Hour + 8*time.Minute}},
+			wantDev:   "awg1", wantMode: entity.FailoverBackup, wantSvc: "awg1",
+			wantKinds: []entity.FailoverEventKind{entity.FailoverAllDown, entity.FailoverTunnelUp},
+			wantDown:  []time.Duration{5 * time.Minute, 3 * time.Minute},
 		},
 		{
 			name:      "both down past grace: direct",
@@ -90,7 +107,10 @@ func TestStep(t *testing.T) {
 
 			st := failover.Initial(rules, tt.manualOff, t0)
 
-			var kinds []entity.FailoverEventKind
+			var (
+				kinds []entity.FailoverEventKind
+				downs []time.Duration
+			)
 
 			for _, p := range tt.probes {
 				var events []entity.FailoverEvent
@@ -98,6 +118,7 @@ func TestStep(t *testing.T) {
 				st, events = failover.Step(st, p.health, t0.Add(p.at), rules)
 				for _, ev := range events {
 					kinds = append(kinds, ev.Kind)
+					downs = append(downs, ev.Downtime)
 				}
 			}
 
@@ -112,6 +133,10 @@ func TestStep(t *testing.T) {
 			for i := range kinds {
 				if kinds[i] != tt.wantKinds[i] {
 					t.Errorf("event %d = %v, want %v", i, kinds[i], tt.wantKinds[i])
+				}
+
+				if tt.wantDown != nil && downs[i] != tt.wantDown[i] {
+					t.Errorf("event %d downtime = %v, want %v", i, downs[i], tt.wantDown[i])
 				}
 			}
 		})
